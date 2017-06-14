@@ -6,7 +6,10 @@ import cv2
 datacfg = 'cfg/coco.data'
 cfgfile = 'cfg/tiny-yolo.cfg'
 weightfile = '../tiny-yolo.weights'
-filename = 'data/person.jpg'
+#datacfg = 'cfg/combine9k.data'
+#cfgfile = 'cfg/yolo9000.cfg'
+#weightfile = '../yolo9000.weights'
+filename = 'data/dog.jpg'
 thresh = 0.24
 hier_thresh = 0.5
 cam = cv2.VideoCapture(-1)
