@@ -10,6 +10,7 @@
 #include "libyolo.h"
 
 typedef struct {
+	char darknet_path[1024];
 	char **names;
 	float nms;
 	box *boxes;
@@ -49,13 +50,16 @@ void get_detection_info(image im, int num, float thresh, box *boxes, float **pro
 	}
 }
 
-yolo_handle yolo_init(char *datacfg, char *cfgfile, char *weightfile)
+yolo_handle yolo_init(char *darknet_path, char *datacfg, char *cfgfile, char *weightfile)
 {
 	yolo_obj *obj = (yolo_obj *)malloc(sizeof(yolo_obj));
 	if (!obj) return NULL;
 	memset(obj, 0, sizeof(yolo_obj));
 
-	chdir("./darknet");
+	char cur_dir[1024];
+	strncpy(obj->darknet_path, darknet_path, sizeof(obj->darknet_path));
+	getcwd(cur_dir, sizeof(cur_dir));
+	chdir(darknet_path);
 	list *options = read_data_cfg(datacfg);
 	char *name_list = option_find_str(options, "names", "data/names.list");
 	obj->names = get_labels(name_list);
@@ -74,6 +78,7 @@ yolo_handle yolo_init(char *datacfg, char *cfgfile, char *weightfile)
 	obj->boxes = calloc(l.w*l.h*l.n, sizeof(box));
 	obj->probs = calloc(l.w*l.h*l.n, sizeof(float *));
 	for(j = 0; j < l.w*l.h*l.n; ++j) obj->probs[j] = calloc(l.classes + 1, sizeof(float *));
+	chdir(cur_dir);
 
 	return (yolo_handle)obj;
 }
@@ -92,7 +97,7 @@ void yolo_cleanup(yolo_handle handle)
 detection_info **yolo_detect(yolo_handle handle, image im, float thresh, float hier_thresh, int *num)
 {
 	yolo_obj *obj = (yolo_obj *)handle;
-	image sized = resize_image(im, obj->net.w, obj->net.h);
+	image sized = letterbox_image(im, obj->net.w, obj->net.h);
 
 	float *X = sized.data;
 	clock_t time;
@@ -101,9 +106,8 @@ detection_info **yolo_detect(yolo_handle handle, image im, float thresh, float h
 	printf("Cam frame predicted in %f seconds.\n", sec(clock()-time));
 
 	layer l = obj->net.layers[obj->net.n-1];
-	get_region_boxes(l, 1, 1, obj->net.w, obj->net.h, thresh, obj->probs, obj->boxes, 0, 0, hier_thresh, 0);  // get_region_boxes(l, 1, 1, thresh, obj->probs, obj->boxes, 0, 0, hier_thresh);
-	if (l.softmax_tree && obj->nms) do_nms_obj(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
-	else if (obj->nms) do_nms_sort(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
+	get_region_boxes(l, im.w, im.h, obj->net.w, obj->net.h, thresh, obj->probs, obj->boxes, NULL, 0, 0, hier_thresh, 1);
+	if (obj->nms) do_nms_obj(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
 
 	list *output = make_list();
 	get_detection_info(im, l.w*l.h*l.n, thresh, obj->boxes, obj->probs, l.classes, obj->names, output);
@@ -117,7 +121,7 @@ detection_info **yolo_detect(yolo_handle handle, image im, float thresh, float h
 	return info;
 }
 
-detection_info **yolo_test(yolo_handle handle, char *filename, float thresh, float hier_thresh, int *num)
+detection_info **yolo_test(yolo_handle handle, char *filename, float thresh, float hier_thresh, int *num, float **feature_map, int *map_size)
 {
 	yolo_obj *obj = (yolo_obj *)handle;
 
@@ -125,18 +129,19 @@ detection_info **yolo_test(yolo_handle handle, char *filename, float thresh, flo
 	strncpy(input, filename, sizeof(input));
 
 	image im = load_image_color(input,0,0);
-	image sized = resize_image(im, obj->net.w, obj->net.h);
+	image sized = letterbox_image(im, obj->net.w, obj->net.h);
 
 	float *X = sized.data;
 	clock_t time;
 	time=clock();
 	network_predict(obj->net, X);
+	*feature_map = obj->net.output;
+	*map_size = obj->net.outputs;
 	printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
 
 	layer l = obj->net.layers[obj->net.n-1];
-	get_region_boxes(l, 1, 1, obj->net.w, obj->net.h, thresh, obj->probs, obj->boxes, 0, 0, hier_thresh, 0);  // get_region_boxes(l, 1, 1, thresh, obj->probs, obj->boxes, 0, 0, hier_thresh);
-	if (l.softmax_tree && obj->nms) do_nms_obj(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
-	else if (obj->nms) do_nms_sort(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
+	get_region_boxes(l, im.w, im.h, obj->net.w, obj->net.h, thresh, obj->probs, obj->boxes, NULL, 0, 0, hier_thresh, 1);
+	if (obj->nms) do_nms_obj(obj->boxes, obj->probs, l.w*l.h*l.n, l.classes, obj->nms);
 
 	list *output = make_list();
 	get_detection_info(im, l.w*l.h*l.n, thresh, obj->boxes, obj->probs, l.classes, obj->names, output);

@@ -3,26 +3,25 @@ import numpy as np
 import sys
 import cv2
 
+darknet_path = './darknet'
 datacfg = 'cfg/coco.data'
 cfgfile = 'cfg/tiny-yolo.cfg'
 weightfile = '../tiny-yolo.weights'
-#datacfg = 'cfg/combine9k.data'
-#cfgfile = 'cfg/yolo9000.cfg'
-#weightfile = '../yolo9000.weights'
-filename = 'data/dog.jpg'
+filename = darknet_path + '/data/person.jpg'
 thresh = 0.24
 hier_thresh = 0.5
 cam = cv2.VideoCapture(-1)
 ret_val, img = cam.read()
 print(ret_val)
-ret_val = cv2.imwrite(filename,img)
-print(ret_val)
+if ret_val:
+    ret_val = cv2.imwrite(filename,img)
+    print(ret_val)
 
-pyyolo.init(datacfg, cfgfile, weightfile)
+pyyolo.init(darknet_path, datacfg, cfgfile, weightfile)
 
 # from file
 print('----- test original C using a file')
-outputs = pyyolo.test(filename, thresh, hier_thresh)
+outputs = pyyolo.test(filename, thresh, hier_thresh, 0)
 for output in outputs:
 	print(output)
 
