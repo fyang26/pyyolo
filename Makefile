@@ -59,11 +59,10 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile
 
-all: obj $(ALIB)
+all: obj $(LIB)
 
-
-$(ALIB): $(OBJS)
-	$(AR) $(ARFLAGS) $@ $^
+$(LIB): $(OBJS)
+	$(AR) rcs $@ $^
 
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
@@ -77,4 +76,4 @@ obj:
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(ALIB)
+	rm -rf $(OBJS) $(LIB)

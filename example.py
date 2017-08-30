@@ -4,18 +4,19 @@ import sys
 import cv2
 
 darknet_path = './darknet'
-datacfg = 'cfg/coco.data'
-cfgfile = 'cfg/tiny-yolo.cfg'
-weightfile = '../tiny-yolo.weights'
-filename = darknet_path + '/data/person.jpg'
+datacfg = 'cfg/fashion.data'
+cfgfile = 'cfg/yolo.2.0.cfg'
+weightfile = '../yolo.fashion.weights'
+filename = '../annotation-tool/images/101323.jpg'
+
 thresh = 0.24
 hier_thresh = 0.5
-cam = cv2.VideoCapture(-1)
-ret_val, img = cam.read()
-print(ret_val)
-if ret_val:
-    ret_val = cv2.imwrite(filename,img)
-    print(ret_val)
+#cam = cv2.VideoCapture(0)
+#ret_val, img = cam.read()
+#print(ret_val)
+#if ret_val:
+#    ret_val = cv2.imwrite(filename,img)
+#    print(ret_val)
 
 pyyolo.init(darknet_path, datacfg, cfgfile, weightfile)
 
