@@ -6,7 +6,7 @@ import cv2
 darknet_path = './darknet'
 datacfg = 'cfg/fashion.data'
 cfgfile = 'cfg/yolo.2.0.cfg'
-weightfile = '../yolo.fashion.weights'
+weightfile = '../../models/yolo.fashion.weights'
 filename = '../annotation-tool/images/101323.jpg'
 
 thresh = 0.24
@@ -32,6 +32,7 @@ i = 1
 while i < 2:
 	# ret_val, img = cam.read()
 	img = cv2.imread(filename)
+        img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
 	img = img.transpose(2,0,1)
 	c, h, w = img.shape[0], img.shape[1], img.shape[2]
 	# print w, h, c 
